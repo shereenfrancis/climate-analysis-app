@@ -1,6 +1,6 @@
 import streamlit as st
 
-# Password protection must be the very first Streamlit command
+# Password check must come before ANY other st commands
 def check_password():
     """Returns `True` if the user had the correct password."""
     if "password_correct" not in st.session_state:
@@ -23,9 +23,12 @@ def password_entered():
         st.session_state["password_correct"] = False
         st.error("😕 Password incorrect")
 
-# Check password before anything else
+# Check password before ANY other Streamlit commands
 if not check_password():
     st.stop()
+
+# Only after password check, do page config and other setup
+st.set_page_config(page_title="Climate Analysis", layout="wide")
 
 # Only after password check, do all other imports and setup
 import pandas as pd
@@ -54,8 +57,6 @@ PORTFOLIO_COORDINATES = [
     # ... add all coordinates here ...
     (-28.15, 26.65), (-28.15, 27.75), (-28.15, 29.05)
 ]
-
-st.set_page_config(page_title="Climate Analysis", layout="wide")
 
 st.title("Climate Analysis Dashboard")
 
