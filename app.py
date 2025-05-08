@@ -1,4 +1,33 @@
 import streamlit as st
+
+# Password protection must be the very first Streamlit command
+def check_password():
+    """Returns `True` if the user had the correct password."""
+    if "password_correct" not in st.session_state:
+        st.text_input(
+            "Enter the password to access the app", 
+            type="password", 
+            key="password",
+            on_change=password_entered
+        )
+        st.write("Contact administrator for access.")
+        return False
+    
+    return st.session_state["password_correct"]
+
+def password_entered():
+    """Checks whether a password entered by the user is correct."""
+    if st.session_state["password"] == st.secrets["password"]:
+        st.session_state["password_correct"] = True
+    else:
+        st.session_state["password_correct"] = False
+        st.error("😕 Password incorrect")
+
+# Check password before anything else
+if not check_password():
+    st.stop()
+
+# Only after password check, do all other imports and setup
 import pandas as pd
 from rainfall_analysis import get_monthly_rainfall_analysis, plot_rainfall_analysis, get_summary_statistics
 from soil_moisture_analysis import get_soil_moisture_data, plot_soil_moisture, get_soil_moisture_stats
