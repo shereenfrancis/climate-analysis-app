@@ -5,4 +5,5 @@ matplotlib
 folium
 requests
 Pillow
-seaborn 
+seaborn
+scipy 
