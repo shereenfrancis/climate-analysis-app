@@ -2,30 +2,24 @@ import pandas as pd
 import numpy as np
 from scipy import stats
 
-def calculate_trigger_levels(rainfall_data, percentiles=[10, 25, 50, 75, 90]):
-    """Calculate trigger levels for parametric insurance"""
-    monthly_triggers = {}
-    for month in range(1, 13):
-        month_data = rainfall_data[rainfall_data.index.month == month]['rainfall_mm']
-        triggers = {}
-        for p in percentiles:
-            triggers[f'p{p}'] = np.percentile(month_data, p)
-        monthly_triggers[month] = triggers
-    return monthly_triggers
+def calculate_trigger_levels(data, percentiles=[10, 25, 50, 75, 90]):
+    """Calculate trigger levels based on historical data"""
+    triggers = {}
+    for p in percentiles:
+        triggers[f'p{p}'] = np.percentile(data, p)
+    return triggers
 
-def calculate_risk_metrics(rainfall_data):
-    """Calculate key risk metrics for underwriting"""
-    metrics = {
-        'volatility': rainfall_data['rainfall_mm'].std(),
-        'skewness': stats.skew(rainfall_data['rainfall_mm']),
-        'kurtosis': stats.kurtosis(rainfall_data['rainfall_mm']),
-        'var_95': np.percentile(rainfall_data['rainfall_mm'], 5),  # Value at Risk
-        'cvar_95': rainfall_data[rainfall_data['rainfall_mm'] <= np.percentile(rainfall_data['rainfall_mm'], 5)]['rainfall_mm'].mean(),  # Conditional VaR
-        'max_consecutive_dry_months': calculate_consecutive_dry_months(rainfall_data),
-        'drought_frequency': calculate_drought_frequency(rainfall_data),
-        'seasonal_volatility': calculate_seasonal_volatility(rainfall_data)
+def calculate_risk_metrics(data, trigger_level):
+    """Calculate basic risk metrics"""
+    below_trigger = data < trigger_level
+    frequency = below_trigger.mean()
+    severity = (trigger_level - data[below_trigger]).mean() if any(below_trigger) else 0
+    
+    return {
+        'frequency': frequency,
+        'severity': severity,
+        'expected_loss': frequency * severity
     }
-    return metrics
 
 def calculate_consecutive_dry_months(rainfall_data, threshold_percentile=25):
     """Calculate maximum consecutive months below threshold"""
@@ -58,22 +52,16 @@ def calculate_seasonal_volatility(rainfall_data):
                                    labels=['Summer', 'Autumn', 'Winter', 'Spring'])
     return rainfall_data.groupby('season')['rainfall_mm'].std().to_dict()
 
-def simulate_payouts(rainfall_data, trigger_levels, payout_structure):
-    """Simulate insurance payouts based on trigger levels"""
-    payouts = []
-    for index, row in rainfall_data.iterrows():
-        month = index.month
-        rainfall = row['rainfall_mm']
-        monthly_triggers = trigger_levels[month]
-        
-        # Calculate payout based on trigger levels
-        if rainfall <= monthly_triggers['p10']:
-            payouts.append(payout_structure['severe'])
-        elif rainfall <= monthly_triggers['p25']:
-            payouts.append(payout_structure['moderate'])
-        elif rainfall <= monthly_triggers['p50']:
-            payouts.append(payout_structure['mild'])
-        else:
-            payouts.append(0)
-            
-    return pd.Series(payouts, index=rainfall_data.index) 
+def simulate_payouts(data, trigger_level, payout_per_unit=1.0):
+    """Simulate insurance payouts"""
+    payouts = np.zeros_like(data)
+    below_trigger = data < trigger_level
+    payouts[below_trigger] = (trigger_level - data[below_trigger]) * payout_per_unit
+    
+    return {
+        'payouts': payouts,
+        'total_payout': payouts.sum(),
+        'avg_annual_payout': payouts.mean(),
+        'max_payout': payouts.max(),
+        'payout_frequency': (payouts > 0).mean()
+    } 
