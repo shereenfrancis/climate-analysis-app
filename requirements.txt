@@ -3,6 +3,7 @@ pandas
 numpy
 matplotlib
 folium
+folium-plugin
 requests
 Pillow
 seaborn

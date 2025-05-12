@@ -1,4 +1,5 @@
 import folium
+from folium import plugins
 import numpy as np
 import requests
 from datetime import datetime, timedelta
@@ -28,26 +29,27 @@ def create_single_grid_cell(latitude, longitude, start_date=None, end_date=None)
             overlay=False
         ).add_to(m)
         
-        folium.TileLayer(
-            tiles='https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
-            attr='Google Satellite',
-            name='Google Satellite',
-            overlay=False
-        ).add_to(m)
+        # Calculate 10km x 10km grid cell size in degrees
+        cell_size_km = 10
+        lat_km = 111.0  # Length of 1 degree of latitude in km
+        lon_km = 111.0 * np.cos(np.deg2rad(latitude))  # Length of 1 degree of longitude in km
+        
+        cell_size_lat = cell_size_km / lat_km  # Convert km to degrees
+        cell_size_lon = cell_size_km / lon_km
         
         # Add grid cell
-        cell_size = 0.01  # Approximately 1km at the equator
         bounds = [
-            [latitude - cell_size/2, longitude - cell_size/2],
-            [latitude + cell_size/2, longitude + cell_size/2]
+            [latitude - cell_size_lat/2, longitude - cell_size_lon/2],
+            [latitude + cell_size_lat/2, longitude + cell_size_lon/2]
         ]
         
+        # Add the grid cell rectangle
         folium.Rectangle(
             bounds=bounds,
             color='red',
             weight=2,
             fill=False,
-            popup=f'Grid Cell<br>Center: {latitude:.4f}, {longitude:.4f}'
+            popup=f'10km x 10km Grid Cell<br>Center: {latitude:.4f}, {longitude:.4f}'
         ).add_to(m)
         
         # Add center point marker
@@ -56,6 +58,9 @@ def create_single_grid_cell(latitude, longitude, start_date=None, end_date=None)
             popup=f'Center Point<br>Lat: {latitude}<br>Lon: {longitude}',
             icon=folium.Icon(color='green', icon='info-sign')
         ).add_to(m)
+        
+        # Add scale bar to show distance
+        plugins.MeasureControl(position='bottomleft').add_to(m)
         
         # Add layer control
         folium.LayerControl().add_to(m)
