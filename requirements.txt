@@ -8,4 +8,5 @@ requests
 Pillow
 seaborn
 scipy
-plotly 
+plotly==5.18.0
+kaleido  # For static image export in plotly 
