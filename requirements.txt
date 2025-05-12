@@ -2,9 +2,10 @@ streamlit
 pandas
 numpy
 matplotlib
-folium
-folium-plugin
+folium>=0.12.0
+branca>=0.3.1
 requests
 Pillow
 seaborn
-scipy 
+scipy
+plotly 
